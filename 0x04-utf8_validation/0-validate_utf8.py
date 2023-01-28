@@ -1,29 +1,30 @@
 #!/usr/bin/python3
-"""
-UTF-8 Validaation
-"""
+"""UTF-8 validator"""
 
 
 def validUTF8(data):
     """
-    data: a  list of integers
-    Return: True if data is a vlid UTF-8 encoding,
-        else return false
+    Check that a sequence of byte values follows the
+    UTF-8 encoding rules.  Does not check for
+    canonicalization (i.e. overlong encodings
+    are acceptable).
     """
-    byte_count = 0
 
-    for i in data:
-        if byte_count == 0:
-            if i >> 5 == 0b110 or i >> 5 == 0b1110:
-                byte_count == 1
-            elif i >> 4 == 0b1110:
-                byte_count == 2
-            elif i >> 3 == 0b11110:
-                byte_count == 3
-            elif i >> 7 == 0b1:
-                return false
-        else:
-            if i >> 6 != 0b10:
-                return false
-            byte_count -= 1
-    return byte_count == 0
+    data = iter(data)
+    for leading_byte in data:
+        leading_ones = _count_leading_ones(leading_byte)
+        if leading_ones in [1, 7, 8]:
+            return False
+        for _ in range(leading_ones - 1):
+            trailing_byte = next(data, None)
+            if trailing_byte is None or trailing_byte >> 6 != 0b10:
+                return False
+    return True
+
+
+def _count_leading_ones(byte):
+    """Counts the leading ones."""
+    for i in range(8):
+        if byte >> 7 - i == 0b11111111 >> 7 - i & ~1:
+            return i
+    return 8
